@@ -298,3 +298,48 @@ class XLdriverConfig(ctypes.Structure):
         ("channel", XLchannelConfig * 64),
     ]
 
+class XLlinStatPar(ctypes.Structure):
+    _fields_ = [
+        ("LINMode", ctypes.c_uint),
+        ("baudrate", ctypes.c_int),
+        ("LINVersion", ctypes.c_uint),
+        ("reserved", ctypes.c_uint),
+    ]
+class s_xl_lin_msg(ctypes.Structure):
+    _fields_ = [
+        ("id", ctypes.c_ubyte),        # unsigned char id
+        ("dlc", ctypes.c_ubyte),       # unsigned char dlc
+        ("flags", ctypes.c_ushort),    # unsigned short flags
+        ("data", ctypes.c_ubyte * 8),  # unsigned char data[8]
+        ("crc", ctypes.c_ubyte),       # unsigned char crc
+    ]
+
+class s_xl_lin_no_ans(ctypes.Structure):
+    _fields_ = [
+        ("id", ctypes.c_ubyte),  # unsigned char id
+    ]
+class s_xl_lin_wake_up(ctypes.Structure):
+    _fields_ = [
+        ("flag", ctypes.c_ubyte),        # unsigned char flag
+        ("unused", ctypes.c_ubyte * 3),  # unsigned char unused[3]
+        ("startOffs", ctypes.c_uint),    # unsigned int startOffs
+        ("width", ctypes.c_uint),        # unsigned int width
+    ]
+class s_xl_lin_sleep(ctypes.Structure):
+    _fields_ = [
+        ("flag", ctypes.c_ubyte),  # unsigned char flag
+    ]
+
+class s_xl_lin_crc_info(ctypes.Structure):
+    _fields_ = [
+        ("id", ctypes.c_ubyte),    # unsigned char id
+        ("flags", ctypes.c_ubyte), # unsigned char flags
+    ]
+class s_xl_lin_msg_api(ctypes.Union):
+    _fields_ = [
+        ("linMsg", s_xl_lin_msg),
+        ("linNoAns", s_xl_lin_no_ans),
+        ("linWakeUp", s_xl_lin_wake_up),
+        ("linSleep", s_xl_lin_sleep),
+        ("linCRCinfo", s_xl_lin_crc_info),
+    ]

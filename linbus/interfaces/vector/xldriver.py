@@ -294,3 +294,110 @@ xlFlushReceiveQueue = _xlapi_dll.xlFlushReceiveQueue
 xlFlushReceiveQueue.argtypes = [xlclass.XLportHandle]
 xlFlushReceiveQueue.restype = xlclass.XLstatus
 xlFlushReceiveQueue.errcheck = check_status_operation
+
+# Wrap the xlLinSwitchSlave function from the DLL
+xlLinSwitchSlave = _xlapi_dll.xlLinSwitchSlave
+# Define the argument types for the xlLinSwitchSlave function
+xlLinSwitchSlave.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.c_uint,
+    ctypes.c_ubyte,
+]
+xlLinSwitchSlave.restype = xlclass.XLstatus
+xlLinSwitchSlave.errcheck = check_status_operation
+
+xlLinSetChecksum = _xlapi_dll.xlLinSetChecksum
+xlLinSetChecksum.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.POINTER(ctypes.c_ubyte),
+]
+# Define the return type for the xlLinSetChecksum function
+xlLinSetChecksum.restype = xlclass.XLstatus
+xlLinSetChecksum.errcheck = check_status_operation
+
+# Wrap the xlLinWakeUp function from the DLL
+xlLinWakeUp = _xlapi_dll.xlLinWakeUp
+# Define the argument types for the xlLinWakeUp function
+xlLinWakeUp.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+]
+xlLinWakeUp.restype = xlclass.XLstatus
+xlLinWakeUp.errcheck = check_status_operation
+
+
+xlLinSetSleepMode = _xlapi_dll.xlLinSetSleepMode
+# Define the argument types for the xlLinSetSleepMode function
+xlLinSetSleepMode.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.c_uint,
+    ctypes.c_ubyte,
+]
+xlLinSetSleepMode.restype = xlclass.XLstatus
+xlLinSetSleepMode.errcheck = check_status_operation
+
+xlLinSendRequest = _xlapi_dll.xlLinSendRequest
+# Define the argument types for the xlLinSendRequest function
+xlLinSendRequest.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.c_ubyte,
+    ctypes.c_uint,
+]
+xlLinSendRequest.restype = xlclass.XLstatus
+xlLinSendRequest.errcheck = check_status_operation
+
+xlLinSetSlave = _xlapi_dll.xlLinSetSlave
+# Define the argument types for the xlLinSetSlave function
+xlLinSetSlave.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.c_ubyte,
+    ctypes.POINTER(ctypes.c_char),
+    ctypes.c_uint,
+    ctypes.c_ushort
+]
+xlLinSetSlave.restype = xlclass.XLstatus
+xlLinSetSlave.errcheck = check_status_operation
+
+# Wrap the xlLinSetChannelParams function from the DLL
+xlLinSetChannelParams = _xlapi_dll.xlLinSetChannelParams
+# Define the argument types for the xlLinSetChannelParams function
+xlLinSetChannelParams.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    xlclass.s_xl_lin_stat_par,
+]
+# Define the return type for the xlLinSetChannelParams function
+xlLinSetChannelParams.restype = xlclass.XLstatus
+# Set the error checking function for the xlLinSetChannelParams function
+xlLinSetChannelParams.errcheck = check_status_operation
+
+# Wrap the xlLinSetDLC function from the DLL
+xlLinSetDLC = _xlapi_dll.xlLinSetDLC
+# Define the argument types for the xlLinSetDLC function
+xlLinSetDLC.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.POINTER(ctypes.c_char),
+]
+# Define the return type for the xlLinSetDLC function
+xlLinSetDLC.restype = xlclass.XLstatus
+# Set the error checking function for the xlLinSetDLC function
+xlLinSetDLC.errcheck = check_status_operation
+
+# Wrap the xlReceive function from the DLL
+xlReceive = _xlapi_dll.xlReceive
+# Define the argument types for the xlReceive function
+xlReceive.argtypes = [
+    xlclass.XLportHandle,
+    ctypes.POINTER(ctypes.c_uint),
+    ctypes.POINTER(xlclass.XLevent),
+]
+# Define the return type for the xlReceive function
+xlReceive.restype = xlclass.XLstatus
+# Set the error checking function for the xlReceive function
+xlReceive.errcheck = check_status_operation

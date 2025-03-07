@@ -143,6 +143,14 @@ class XL_EventTags(IntEnum):
     XL_TRANSMIT_MSG = 10
     XL_SYNC_PULSE = 11
     XL_APPLICATION_NOTIFICATION = 15
+    XL_LIN_MSG                  = 20,
+    XL_LIN_ERRMSG               = 21,
+    XL_LIN_SYNCERR              = 22,
+    XL_LIN_NOANS                = 23,
+    XL_LIN_WAKEUP               = 24,
+    XL_LIN_SLEEP                = 25,
+    XL_LIN_CRCINFO              = 26,
+
 
 
 class XL_InterfaceVersion(IntEnum):
@@ -163,6 +171,8 @@ class XL_MessageFlags(IntEnum):
     XL_CAN_MSG_FLAG_TX_COMPLETED = 64
     XL_CAN_MSG_FLAG_TX_REQUEST = 128
     XL_CAN_MSG_FLAG_SRR_BIT_DOM = 512
+    XL_LIN_MSGFLAG_TX = XL_CAN_MSG_FLAG_TX_COMPLETED   #!< LIN TX flag
+    XL_LIN_MSGFLAG_CRCERROR = 129  
 
 
 class XL_MessageFlagsExtended(IntEnum):
@@ -328,3 +338,68 @@ class XL_SyncPulseSource(IntEnum):
     XL_SYNC_PULSE_EXTERNAL = 0
     XL_SYNC_PULSE_OUR = 1
     XL_SYNC_PULSE_OUR_SHARED = 2
+
+class XL_LINMode(IntEnum):
+    """
+    LIN Mode for setting the channel mode.
+    """
+    XL_LIN_MASTER = 0  # Set channel to a LIN master
+    XL_LIN_SLAVE  = 1  # Set channel to LIN slave
+
+class XL_LINVersion(IntEnum):
+    """
+    LIN Version for setting the LIN protocol version.
+    """
+    XL_LIN_VERSION_1_3 = 0  # LIN protocol version 1.3
+    XL_LIN_VERSION_2_0 = 1  # LIN protocol version 2.0
+
+class XL_LINMsgFlags(IntFlag):
+    """
+    LIN Message Flags for indicating the status of LIN messages.
+    """
+    XL_LIN_MSGFLAG_TX       = 1 << 0  # The LIN message was sent by the same LIN channel
+    XL_LIN_MSGFLAG_CRCERROR = 1 << 1  # LIN CRC error
+
+class XL_LinSetSlave(IntEnum):
+    # Flag for automatic 'classic' checksum calculation
+    XL_LIN_CALC_CHECKSUM = 0x100
+    # Flag for automatic 'enhanced' checksum calculation
+    XL_LIN_CALC_CHECKSUM_ENHANCED = 0x200
+
+class XL_LinSetSleepMode(IntEnum):
+    # Set hardware into sleep mode
+    XL_LIN_SET_SILENT = 0x01
+    # Set hardware into sleep mode and send a request at wake-up
+    XL_LIN_SET_WAKEUPID = 0x03
+
+class XL_LinSetChecksum(IntEnum):
+    # For LIN >= 2.0 there can be used two different Checksum models.
+    # Use classic CRC
+    XL_LIN_CHECKSUM_CLASSIC = 0x00
+    # Use enhanced CRC
+    XL_LIN_CHECKSUM_ENHANCED = 0x01
+    # Set the checksum calculation to undefined.
+    XL_LIN_CHECKSUM_UNDEFINED = 0xff
+
+class XL_LinSleepModeEvent(IntEnum):
+    # Flag if nothing changes
+    XL_LIN_STAYALIVE = 0x00
+    # Flag if the hardware is set into the sleep mode
+    XL_LIN_SET_SLEEPMODE = 0x01
+    # Flag if the hardware comes from the sleep mode
+    XL_LIN_COMESFROM_SLEEPMODE = 0x02
+
+class XL_LinWakeUpEvent(IntEnum):
+    # The wake up event: XL_LIN_WAKEUP
+    # Flag to signal an internal WAKEUP (event)
+    XL_LIN_WAKUP_INTERNAL = 0x01
+
+class XL_LinSetDLC(IntEnum):
+    # Set the DLC to undefined
+    XL_LIN_UNDEFINED_DLC = 0xff
+
+class XL_LinSwitchSlave(IntEnum):
+    # Switch on the LIN slave
+    XL_LIN_SLAVE_ON = 0xff
+    # Switch off the LIN slave
+    XL_LIN_SLAVE_OFF = 0x00
