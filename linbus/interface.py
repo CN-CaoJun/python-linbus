@@ -6,8 +6,6 @@ from typing import *
 from .bus import BusABC
 from .vector.exceptions import InterfaceNotImplementedError
 
-
-
 # interface_name => (module, classname)
 BACKENDS: Dict[str, Tuple[str, str]] = {
     "vector": ("lin.vector", "VectorLinBus"),
