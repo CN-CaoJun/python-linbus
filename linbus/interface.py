@@ -79,6 +79,7 @@ class LinBus(BusABC):  # pylint: disable=abstract-method
         cls = _get_class_for_interface(interface)
 
         # make sure the bus can handle this config format
+        print(f"app_name: {app_name}, channel: {channel}, kwargs: {kwargs}")
         bus = cls(app_name = app_name,channel=channel,**kwargs)
 
         return cast(BusABC, bus)
