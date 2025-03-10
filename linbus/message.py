@@ -48,3 +48,44 @@ class Message:
             self.dlc = len(self.data)
         else:
             self.dlc = dlc
+
+
+class LINPDU(Message):
+    """
+    Implements AUTOSAR LIN PDU specification with enhanced validation
+    """
+    __slots__ = (
+        "Pid",      # Protocol ID
+        "CS",       # Checksum
+        "Drc",      # Direction
+        "DL",       # Data Length
+        "Sduptr"    # Service Data Unit pointer
+    )
+
+    def __init__(self, 
+                 timestamp: float = 0.0,
+                 Pid: int = 0,
+                 CS: int = 0,
+                 Drc: int = 0,
+                 DL: int = 0,
+                 Sduptr: bytearray = None):
+        
+        super().__init__(timestamp)
+        
+        self.Pid = Pid
+        self.CS = CS
+        self.Drc = Drc
+        self.DL = DL
+        
+        if Sduptr is None:
+            self.Sduptr = bytearray()
+        elif isinstance(Sduptr, bytearray):
+            self.Sduptr = Sduptr
+        else:
+            self.Sduptr = bytearray(Sduptr)
+
+        # LIN protocol validation
+        if self.DL > 8:
+            raise ValueError("LIN PDUs cannot exceed 8 data bytes")
+        if self.Drc not in (0, 1):
+            raise ValueError("Invalid LIN Direction (0=Receive, 1=Transmit)")
