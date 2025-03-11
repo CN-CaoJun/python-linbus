@@ -55,4 +55,8 @@
 
 - Q4 2025: Full Data layer services
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
     

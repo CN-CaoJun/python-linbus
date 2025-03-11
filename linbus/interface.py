@@ -1,26 +1,37 @@
-"""
-This module contains the base implementation of :class:`BusABC` as well
+"""LIN Bus Interface Module
+
+This module provides the core implementation for LIN (Local Interconnect Network) bus interfaces.
+It includes the base implementation of BusABC class and a dynamic backend loading system
+that allows different LIN hardware interfaces to be used interchangeably.
 """
 import importlib
 from typing import *
 from .bus import BusABC
 from .vector.exceptions import InterfaceNotImplementedError
 
-# interface_name => (module, classname)
+# Dictionary mapping interface names to their corresponding module and class names
+# Format: interface_name => (module_path, class_name)
 BACKENDS: Dict[str, Tuple[str, str]] = {
     "vector": ("lin.vector", "VectorLinBus"),
 }
 
 def _get_class_for_interface(interface: str) -> Type[BusABC]:
-    """
-    Returns the main bus class for the given interface.
+    """Dynamically loads and returns the appropriate bus class for the specified interface.
 
-    :raises:
-        NotImplementedError if the interface is not known
-    :raises InterfaceNotImplementedError:
-         if there was a problem while importing the interface or the bus class within that
+    This function implements a plugin-like system for LIN interfaces by dynamically
+    importing the required module and class based on the interface name.
+
+    Args:
+        interface: Name of the interface to load (must be a key in BACKENDS)
+
+    Returns:
+        The bus class for the specified interface
+
+    Raises:
+        NotImplementedError: If the requested interface is not registered in BACKENDS
+        InterfaceNotImplementedError: If there are problems importing the interface module or class
     """
-    # Find the correct backend
+    # Look up the module and class names for the requested interface
     try:
         module_name, class_name = BACKENDS[interface]
     except KeyError:
@@ -28,7 +39,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
             f"Lin interface '{interface}' not supported"
         ) from None
 
-    # Import the correct interface module
+    # Dynamically import the interface module
     try:
         module = importlib.import_module(module_name)
     except Exception as e:
@@ -36,7 +47,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
             f"Cannot import module {module_name} for Lin interface '{interface}': {e}"
         ) from None
 
-    # Get the correct class
+    # Get the interface class from the module
     try:
         bus_class = getattr(module, class_name)
     except Exception as e:
@@ -49,23 +60,28 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
 
 
 class LinBus(BusABC):  # pylint: disable=abstract-method
-    """Bus wrapper with configuration loading.
-    :param numberOfChannels:
-        numberOfChannels identification
+    """Factory class for creating LIN bus interface instances.
 
-    :param interface:
-        See :ref:`interface names` for a list of supported interfaces.
-        Set to ``None`` to let it be resolved automatically from the default
-        :ref:`configuration`.
+    This class serves as a high-level factory that creates the appropriate bus interface
+    instance based on the specified interface type. It provides a unified way to
+    instantiate different LIN hardware interfaces while handling configuration and
+    initialization.
 
-    :param app_name:
-        assgin app name to vector
+    Args:
+        channel: Channel identifier for the LIN interface. Can be an integer, sequence of integers,
+                or a string depending on the interface type.
+        interface: Name of the interface to use (must be registered in BACKENDS).
+                  If None, will attempt to use a default configuration.
+        app_name: Application name to identify this connection to the Vector interface.
+        kwargs: Additional interface-specific configuration parameters.
 
-    :param kwargs:
-        ``interface`` specific keyword arguments.
+    Returns:
+        An instance of the appropriate BusABC subclass for the specified interface.
 
-    :raises ValueError:
-        if the ``channel`` could not be determined
+    Raises:
+        ValueError: If the channel configuration is invalid
+        NotImplementedError: If the specified interface is not supported
+        InterfaceNotImplementedError: If there are problems initializing the interface
     """
     def __new__(  # type: ignore
         cls: Any,
@@ -75,10 +91,10 @@ class LinBus(BusABC):  # pylint: disable=abstract-method
         **kwargs: Any,
     ) -> BusABC:
         
-        # resolve the bus class to use for that interface
+        # Dynamically load the appropriate interface class
         cls = _get_class_for_interface(interface)
 
-        # make sure the bus can handle this config format
+        # Create and return an instance of the interface
         print(f"app_name: {app_name}, channel: {channel}, kwargs: {kwargs}")
         bus = cls(app_name = app_name,channel=channel,**kwargs)
 
