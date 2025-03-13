@@ -89,3 +89,41 @@ class LINPDU(Message):
             raise ValueError("LIN PDUs cannot exceed 8 data bytes")
         if self.Drc not in (0, 1):
             raise ValueError("Invalid LIN Direction (0=Receive, 1=Transmit)")
+
+
+class LINFrame(Message):
+    """
+    Implementation of LIN frame based on OpenLIN data layer frame structure.
+    Inherits from Message class and adds LIN-specific attributes.
+    """
+    __slots__ = (
+        "pid",      # Protocol ID field
+        "length",   # Length of data
+        "checksum"  # LIN frame checksum
+    )
+
+    def __init__(self,
+                 timestamp: float = 0.0,
+                 pid: int = 0,
+                 length: int = 0,
+                 data: bytearray = None,
+                 checksum: int = 0):
+        """
+        Initialize a LIN frame.
+
+        Args:
+            timestamp (float): Time when frame was sent/received
+            pid (int): Protocol ID field identifying the frame
+            length (int): Length of data in bytes
+            data (bytearray): Pointer to frame data bytes
+            checksum (int): Frame checksum for error detection
+        """
+        super().__init__(timestamp=timestamp, dlc=length, data=data)
+
+        self.pid = pid
+        self.length = length
+        self.checksum = checksum
+
+        # Validate frame length
+        if self.length > 8:
+            raise ValueError("LIN frame data cannot exceed 8 bytes")

@@ -10,8 +10,32 @@ class LinFrameType:
     TRANSMIT = 0
     RECEIVE = 1
 
+class LinFrameSlot:
+    """LIN frame slot definition, corresponding to C struct open_lin_frame_slot_t"""
+    def __init__(self, pid: int, frame_type: int, data_length: int, data: bytearray = None):
+        """Initialize LIN frame slot
+        
+        Args:
+            pid: Protocol ID
+            frame_type: Frame type (transmit/receive)
+            data_length: Data length
+            data: Data pointer
+        """
+        self.pid = pid
+        self.frame_type = frame_type
+        self.data_length = data_length
+        self.data = data if data else bytearray(data_length)
+
 class MasterFrameTableItem:
-    def __init__(self, slot, offset_ms, response_wait_ms):
+    """LIN master schedule table item, corresponding to C struct t_master_frame_table_item"""
+    def __init__(self, slot: LinFrameSlot, offset_ms: int, response_wait_ms: int):
+        """Initialize schedule table item
+        
+        Args:
+            slot: Frame slot
+            offset_ms: Time offset (milliseconds)
+            response_wait_ms: Response wait time (milliseconds)
+        """
         self.slot = slot
         self.offset_ms = offset_ms
         self.response_wait_ms = response_wait_ms
