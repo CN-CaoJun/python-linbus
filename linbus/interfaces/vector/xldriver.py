@@ -3,6 +3,8 @@
 Ctypes wrapper module for Vector CAN Interface on win32/win64 systems.
 
 Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
+
+Add Lin related: Cao Jun <sxha951@gmail.com>, Suzhou JiangSu China
 """
 
 import ctypes

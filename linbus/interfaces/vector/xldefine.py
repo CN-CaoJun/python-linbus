@@ -1,5 +1,10 @@
 """
-Definition of constants for vxlapi.
+Definition of data types and structures for vxlapi.
+
+Authors: Julien Grave <grave.jul@gmail.com>, Christian Sandberg
+
+Add Lin related: Cao Jun <sxha951@gmail.com>, Suzhou JiangSu China
+
 """
 
 # Import Python Modules
