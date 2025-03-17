@@ -35,7 +35,7 @@
     -  Full support for LIN Description File (LDF) v2.1+ specifications
 
 
-**NOTE**：Due to device resource limitations, priority is currently given to Vector VN 1640
+**NOTE**: Current development primarily focuses on Vector series devices for implementation and testing because of the limited resources available.
 
 ## Getting Started
 
