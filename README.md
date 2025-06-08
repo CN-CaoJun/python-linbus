@@ -35,7 +35,7 @@
     -  Full support for LIN Description File (LDF) v2.1+ specifications
 
 
-**NOTE**: Current development primarily focuses on Vector series devices for implementation and testing because of the limited resources available.
+**NOTE**: Current development primarily focuses on Vector series devices for implementation and testing.
 
 ## Getting Started
 
