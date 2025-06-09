@@ -1,193 +1,175 @@
-import re
-from typing import Dict, List, Optional, Union
+from typing import List, Dict, Any
+from linbus.message import LINPDU # Assuming LINPDU can help with PID calculation
+from linbus.lin_master import LinFrameSlot, MasterFrameTableItem, LinFrameType
 
-class LdfParseError(Exception):
-    """Exception raised for errors during LDF parsing."""
-    pass
+# Placeholder for your LDF parsing result structure
+# This would typically be a more complex object or dictionary
+# For example, it might look like:
+# ldf_data = {
+#     "frames": {
+#         "MasterReq": {"id": 0x3C, "length": 8, "publisher": "MasterNode"},
+#         "SlaveResp": {"id": 0x3D, "length": 4, "publisher": "SlaveNode1"}
+#     },
+#     "nodes": {
+#         "master_node_name": "MasterNode" # Name of the master node in LDF
+#     },
+#     "schedule_tables": {
+#         "Table1": [
+#             {"frame_name": "MasterReq", "delay_ms": 10},
+#             {"frame_name": "SlaveResp", "delay_ms": 20}
+#         ]
+#     }
+# }
 
-class LdfSignal:
-    def __init__(self):
-        self.name: str = ""
-        self.size: int = 0
-        self.init_value: int = 0
-        self.publisher: str = ""
-        self.subscribers: List[str] = []
+class LdfScheduleBuilder:
+    def __init__(self, ldf_data: Dict[str, Any], master_node_name: str):
+        """
+        Initializes the builder with parsed LDF data.
 
-class LdfFrame:
-    def __init__(self):
-        self.name: str = ""
-        self.id: int = 0
-        self.length: int = 0
-        self.signals: Dict[str, LdfSignal] = {}
-        self.publisher: str = ""
+        Args:
+            ldf_data: A dictionary or object representing the parsed LDF content.
+                      It should contain 'frames', 'nodes', and 'schedule_tables'.
+            master_node_name: The name of the LIN master node as defined in the LDF.
+        """
+        self.ldf_data = ldf_data
+        self.master_node_name = master_node_name
+        self.frames_map = self._build_frames_map()
 
-class LdfNode:
-    def __init__(self):
-        self.name: str = ""
-        self.protocol_version: str = ""
-        self.configured_nad: int = 0
-        self.initial_nad: int = 0
-        self.supplier_id: int = 0
-        self.function_id: int = 0
-        self.variant_id: int = 0
+    def _build_frames_map(self) -> Dict[str, Dict[str, Any]]:
+        """Helper to create a quick lookup map for frames by name."""
+        frames_map = {}
+        if "frames" in self.ldf_data:
+            for frame_name, frame_details in self.ldf_data["frames"].items():
+                frames_map[frame_name] = frame_details
+                # LDF might store ID as int, ensure it's used consistently
+                # Also, LDF usually gives Frame ID, not Protected ID (PID)
+                # PID calculation would be needed.
+        return frames_map
 
-class LdfScheduleEntry:
-    def __init__(self):
-        self.frame: str = ""
-        self.delay: float = 0.0
+    def _calculate_pid(self, frame_id: int) -> int:
+        """
+        Calculates the Protected ID (PID) from a given Frame ID.
+        This is a placeholder. You'd use a proper LIN PID calculation here,
+        potentially from the LINPDU class or a utility function.
+        Example: P0=ID0^ID1^ID2^ID4, P1=~(ID1^ID3^ID4^ID5)
+        PID = FrameID | (P0<<6) | (P1<<7)
+        """
+        # Simplified placeholder - replace with actual PID calculation logic
+        # For example, using a utility or the LINPDU class if available
+        # return LINPDU(frame_id=frame_id).Pid # If LINPDU handles this
+        
+        # Basic placeholder logic (NOT LIN COMPLIANT - FOR ILLUSTRATION ONLY)
+        p0 = (frame_id & 0x01) ^ ((frame_id >> 1) & 0x01) ^ ((frame_id >> 2) & 0x01) ^ ((frame_id >> 4) & 0x01)
+        p1 = ~(((frame_id >> 1) & 0x01) ^ ((frame_id >> 3) & 0x01) ^ ((frame_id >> 4) & 0x01) ^ ((frame_id >> 5) & 0x01)) & 0x01
+        return frame_id | (p0 << 6) | (p1 << 7)
 
-class LdfParser:
-    def __init__(self):
-        self.protocol_version: str = ""
-        self.language_version: str = ""
-        self.speed: int = 19200
-        self.master: Optional[LdfNode] = None
-        self.slaves: Dict[str, LdfNode] = {}
-        self.signals: Dict[str, LdfSignal] = {}
-        self.frames: Dict[str, LdfFrame] = {}
-        self.schedule_tables: Dict[str, List[LdfScheduleEntry]] = {}
+    def build_schedule_table(self, schedule_table_name: str, default_response_wait_ms: int = 50) -> List[MasterFrameTableItem]:
+        """
+        Builds a LIN Master schedule table from the LDF data.
 
-    def parse_file(self, file_path: str) -> None:
-        """Parse an LDF file and populate the parser's data structures."""
-        try:
-            with open(file_path, 'r') as f:
-                content = f.read()
+        Args:
+            schedule_table_name: The name of the schedule table to build (e.g., "Table1").
+            default_response_wait_ms: Default wait time for slave responses.
 
-            # Remove comments
-            content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-            content = re.sub(r'//.*$', '', content, flags=re.MULTILINE)
+        Returns:
+            A list of MasterFrameTableItem objects.
+            Returns an empty list if the schedule table is not found or is empty.
+        """
+        schedule_items: List[MasterFrameTableItem] = [] 
+        
+        if "schedule_tables" not in self.ldf_data or \
+           schedule_table_name not in self.ldf_data["schedule_tables"]:
+            print(f"Warning: Schedule table '{schedule_table_name}' not found in LDF data.")
+            return schedule_items
 
-            # Parse header section
-            self._parse_header(content)
+        ldf_schedule_slots = self.ldf_data["schedule_tables"][schedule_table_name]
+
+        for ldf_slot in ldf_schedule_slots:
+            frame_name = ldf_slot.get("frame_name") # Or by ID if LDF stores it that way
+            delay_ms = ldf_slot.get("delay_ms", 0) # Time offset for this slot
+
+            if not frame_name or frame_name not in self.frames_map:
+                print(f"Warning: Frame '{frame_name}' in schedule table '{schedule_table_name}' not found in LDF frames definition.")
+                continue
+
+            frame_info = self.frames_map[frame_name]
+            frame_id = frame_info.get("id")
+            data_length = frame_info.get("length")
+            publisher_node = frame_info.get("publisher")
+
+            if frame_id is None or data_length is None or publisher_node is None:
+                print(f"Warning: Incomplete LDF frame data for '{frame_name}'. Skipping.")
+                continue
             
-            # Parse nodes section
-            self._parse_nodes(content)
+            # Calculate PID from Frame ID
+            # LDF typically provides the 6-bit Frame ID. PID includes parity bits.
+            pid = self._calculate_pid(frame_id) 
+
+            # Determine frame type from Master's perspective
+            if publisher_node == self.master_node_name:
+                frame_type = LinFrameType.TRANSMIT
+                # For transmit frames, master might need to prepare data. 
+                # LDF signals section would define initial values or how data is composed.
+                # For now, we'll use an empty bytearray.
+                initial_data = bytearray(data_length) 
+            else:
+                frame_type = LinFrameType.RECEIVE
+                initial_data = None # Master expects to receive this data
             
-            # Parse signals section
-            self._parse_signals(content)
-            
-            # Parse frames section
-            self._parse_frames(content)
-            
-            # Parse schedule tables
-            self._parse_schedule_tables(content)
-
-        except Exception as e:
-            raise LdfParseError(f"Error parsing LDF file: {str(e)}")
-
-    def _parse_header(self, content: str) -> None:
-        """Parse the LDF header section."""
-        # Parse LIN protocol version
-        match = re.search(r'LIN_protocol_version\s*=\s*"([^"]+)"', content)
-        if match:
-            self.protocol_version = match.group(1)
-
-        # Parse LIN language version
-        match = re.search(r'LIN_language_version\s*=\s*"([^"]+)"', content)
-        if match:
-            self.language_version = match.group(1)
-
-        # Parse LIN speed
-        match = re.search(r'LIN_speed\s*=\s*(\d+)\s*kbps', content)
-        if match:
-            self.speed = int(match.group(1)) * 1000
-
-    def _parse_nodes(self, content: str) -> None:
-        """Parse the nodes section of the LDF file."""
-        # Parse master node
-        master_match = re.search(r'Master:\s*([^{]+)', content)
-        if master_match:
-            self.master = LdfNode()
-            self.master.name = master_match.group(1).strip()
-
-        # Parse slave nodes
-        slaves_section = re.search(r'Slaves\s*{([^}]+)}', content)
-        if slaves_section:
-            slave_nodes = re.findall(r'\s*([^\s,;]+)\s*[,;]?', slaves_section.group(1))
-            for slave in slave_nodes:
-                self.slaves[slave] = LdfNode()
-                self.slaves[slave].name = slave
-
-    def _parse_signals(self, content: str) -> None:
-        """Parse the signals section of the LDF file."""
-        signals_section = re.search(r'Signals\s*{([^}]+)}', content)
-        if not signals_section:
-            return
-
-        signal_entries = re.finditer(
-            r'([^:\s]+)\s*:\s*(\d+)\s*,\s*{([^}]+)}\s*,\s*(\d+)\s*,\s*([^;]+);',
-            signals_section.group(1)
-        )
-
-        for match in signal_entries:
-            signal = LdfSignal()
-            signal.name = match.group(1)
-            signal.size = int(match.group(2))
-            signal.init_value = int(match.group(4))
-            
-            # Parse publisher and subscribers
-            nodes = match.group(3).split(',')
-            signal.publisher = nodes[0].strip()
-            signal.subscribers = [node.strip() for node in nodes[1:]]
-            
-            self.signals[signal.name] = signal
-
-    def _parse_frames(self, content: str) -> None:
-        """Parse the frames section of the LDF file."""
-        frames_section = re.search(r'Frames\s*{([^}]+)}', content)
-        if not frames_section:
-            return
-
-        frame_entries = re.finditer(
-            r'([^:\s]+)\s*:\s*(\d+)\s*,\s*([^,]+)\s*,\s*(\d+)\s*{([^}]+)}',
-            frames_section.group(1)
-        )
-
-        for match in frame_entries:
-            frame = LdfFrame()
-            frame.name = match.group(1)
-            frame.id = int(match.group(2))
-            frame.publisher = match.group(3).strip()
-            frame.length = int(match.group(4))
-            
-            # Parse signals in frame
-            signals_text = match.group(5)
-            signal_entries = re.finditer(
-                r'([^,\s]+)\s*,\s*(\d+)\s*;',
-                signals_text
+            lin_frame_slot = LinFrameSlot(
+                pid=pid,
+                frame_type=frame_type,
+                data_length=data_length,
+                data=initial_data
             )
             
-            for signal_match in signal_entries:
-                signal_name = signal_match.group(1)
-                if signal_name in self.signals:
-                    frame.signals[signal_name] = self.signals[signal_name]
-            
-            self.frames[frame.name] = frame
-
-    def _parse_schedule_tables(self, content: str) -> None:
-        """Parse the schedule tables section of the LDF file."""
-        schedule_section = re.search(r'Schedule_tables\s*{([^}]+)}', content)
-        if not schedule_section:
-            return
-
-        table_entries = re.finditer(
-            r'([^{\s]+)\s*{([^}]+)}',
-            schedule_section.group(1)
-        )
-
-        for match in table_entries:
-            table_name = match.group(1)
-            entries = []
-            
-            schedule_entries = re.finditer(
-                r'([^\s]+)\s+delay\s+(\d+\.?\d*)\s*ms;',
-                match.group(2)
+            master_table_item = MasterFrameTableItem(
+                slot=lin_frame_slot,
+                offset_ms=delay_ms, # This is the 'delay' from LDF schedule table
+                response_wait_ms=default_response_wait_ms # Configurable, LDF might not specify this directly for master
             )
+            schedule_items.append(master_table_item)
             
-            for entry_match in schedule_entries:
-                entry = LdfScheduleEntry()
-                entry.frame = entry_match.group(1)
-                entry.delay = float(entry_match.group(2))
-                entries.append(entry)
-            
-            self.schedule_tables[table_name] = entries
+        return schedule_items
+
+# Example of how you might use this (conceptual):
+if __name__ == "__main__":
+    # This would come from your LDF parser (e.g., lin_ldf_parser.py)
+    sample_ldf_data = {
+        "frames": {
+            "MasterReqFrame": {"id": 0x10, "length": 2, "publisher": "MyMaster"},
+            "Slave1StatusFrame": {"id": 0x12, "length": 4, "publisher": "MySlave1"},
+            "MasterSleepCmd": {"id": 0x3C, "length": 8, "publisher": "MyMaster", "signals": { 
+                # Special handling for sleep command data might be needed
+                # LDF defines 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+                # For now, this example doesn't pre-fill specific signal data for transmit.
+            }}
+        },
+        "nodes": {
+            "master_node_name": "MyMaster",
+            "slave_nodes": ["MySlave1", "MySlave2"]
+        },
+        "schedule_tables": {
+            "NormalOperation": [
+                {"frame_name": "MasterReqFrame", "delay_ms": 10},
+                {"frame_name": "Slave1StatusFrame", "delay_ms": 10} # Delays are often relative to table start or previous frame
+            ],
+            "GoToSleepTable": [
+                {"frame_name": "MasterSleepCmd", "delay_ms": 5}
+            ]
+        }
+    }
+
+    master_node_name_from_ldf = sample_ldf_data["nodes"]["master_node_name"]
+    builder = LdfScheduleBuilder(ldf_data=sample_ldf_data, master_node_name=master_node_name_from_ldf)
+    
+    normal_schedule = builder.build_schedule_table("NormalOperation")
+    sleep_schedule = builder.build_schedule_table("GoToSleepTable")
+
+    if normal_schedule:
+        print("\nNormalOperation Schedule:")
+        for item in normal_schedule:
+            print(f"  PID: 0x{item.slot.pid:02X}, Type: {'TX' if item.slot.frame_type == LinFrameType.TRANSMIT else 'RX'}, Len: {item.slot.data_length}, Offset: {item.offset_ms}ms")
+            if item.slot.frame_type == LinFrameType.TRANSMIT:
+                print(f"    Initial Data: {list(item.slot.data)}")
+    
